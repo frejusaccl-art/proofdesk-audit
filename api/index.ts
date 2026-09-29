@@ -1,7 +1,7 @@
 import express, { type Request, type Response } from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { createContext } from "../server/_core/context";
-import { appRouter } from "../server/routers";
+import { createContext } from "../server/_core/context.js";
+import { appRouter } from "../server/routers.js";
 
 const app = express();
 app.use(express.json({ limit: "50mb" }));

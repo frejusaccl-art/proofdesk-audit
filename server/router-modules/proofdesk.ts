@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { auditLeads, evidence, ensureWorkspace, getWorkspaceSummary, getDb, questionnaires } from "../db";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { auditLeads, evidence, ensureWorkspace, getWorkspaceSummary, getDb, questionnaires } from "../db.js";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc.js";
 
 const questionnaireStatus = z.enum(["draft", "in_review", "approved", "shared"]);
 const evidenceStatus = z.enum(["valid", "expiring", "expired"]);
