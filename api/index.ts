@@ -1,7 +1,13 @@
+import express, { type Request, type Response } from "express";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { createContext } from "../server/_core/context";
 import { appRouter } from "../server/routers";
 
-type VercelResponse = { status(code: number): VercelResponse; json(payload: unknown): void };
+const app = express();
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
 
-export default function handler(_req: unknown, res: VercelResponse) {
-  res.status(200).json({ ok: true, procedures: Object.keys(appRouter._def.procedures) });
+export default function handler(req: Request, res: Response) {
+  return app(req, res);
 }
