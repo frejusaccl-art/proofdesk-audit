@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { auditLeads, evidence, ensureWorkspace, getWorkspaceSummary, getDb, questionnaires } from "../db.js";
+import { auditEvents, auditLeads, evidence, ensureWorkspace, getWorkspaceSummary, getDb, questionnaires } from "../db.js";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc.js";
 
 const questionnaireStatus = z.enum(["draft", "in_review", "approved", "shared"]);
@@ -54,11 +54,19 @@ export const proofdeskRouter = router({
     }),
   }),
   auditLeads: router({
-    create: publicProcedure.input(z.object({ email: z.string().email(), firstName: z.string().optional(), lastName: z.string().optional(), role: z.string().optional(), score: z.number().int().min(0).max(100), currentHours: z.number().int().min(0), opportunityValue: z.number().int().nullable().optional(), nextStep: z.string().optional(), answers: z.record(z.string(), z.unknown()) })).mutation(async ({ input }) => {
+    create: publicProcedure.input(z.object({ email: z.string().email(), firstName: z.string().optional(), lastName: z.string().optional(), role: z.string().optional(), score: z.number().int().min(0).max(100), currentHours: z.number().int().min(0), opportunityValue: z.number().int().nullable().optional(), nextStep: z.string().optional(), answers: z.record(z.string(), z.unknown()), consentAt: z.string().datetime(), consentVersion: z.string().min(1).max(40), consentPurpose: z.string().min(1).max(255), source: z.string().max(80).optional(), utmSource: z.string().max(120).optional(), utmMedium: z.string().max(120).optional(), utmCampaign: z.string().max(120).optional() })).mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database is not configured" });
-      const inserted = await db.insert(auditLeads).values({ email: input.email, firstName: input.firstName || null, lastName: input.lastName || null, role: input.role || null, score: input.score, currentHours: input.currentHours, opportunityValue: input.opportunityValue ?? null, nextStep: input.nextStep || null, answers: JSON.stringify(input.answers) });
-      return { id: Number(inserted[0].insertId) };
+      if (!db) return { id: null, persisted: false as const };
+      const inserted = await db.insert(auditLeads).values({ email: input.email, firstName: input.firstName || null, lastName: input.lastName || null, role: input.role || null, score: input.score, currentHours: input.currentHours, opportunityValue: input.opportunityValue ?? null, nextStep: input.nextStep || null, answers: JSON.stringify(input.answers), consentAt: new Date(input.consentAt), consentVersion: input.consentVersion, consentPurpose: input.consentPurpose, source: input.source || null, utmSource: input.utmSource || null, utmMedium: input.utmMedium || null, utmCampaign: input.utmCampaign || null });
+      return { id: Number(inserted[0].insertId), persisted: true as const };
+    }),
+  }),
+  auditEvents: router({
+    track: publicProcedure.input(z.object({ eventName: z.string().min(2).max(80), sessionId: z.string().max(120).optional(), path: z.string().max(255).optional(), metadata: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { persisted: false as const };
+      await db.insert(auditEvents).values({ eventName: input.eventName, sessionId: input.sessionId || null, path: input.path || null, metadata: input.metadata ? JSON.stringify(input.metadata) : null });
+      return { persisted: true as const };
     }),
   }),
 });

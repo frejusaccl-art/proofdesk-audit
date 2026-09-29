@@ -67,6 +67,23 @@ export const auditLeads = mysqlTable("auditLeads", {
   opportunityValue: int("opportunityValue"),
   nextStep: varchar("nextStep", { length: 80 }),
   answers: text("answers").notNull(),
+  consentAt: timestamp("consentAt"),
+  consentVersion: varchar("consentVersion", { length: 40 }),
+  consentPurpose: varchar("consentPurpose", { length: 255 }),
+  source: varchar("source", { length: 80 }),
+  utmSource: varchar("utmSource", { length: 120 }),
+  utmMedium: varchar("utmMedium", { length: 120 }),
+  utmCampaign: varchar("utmCampaign", { length: 120 }),
+  pdfGeneratedAt: timestamp("pdfGeneratedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const auditEvents = mysqlTable("auditEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  eventName: varchar("eventName", { length: 80 }).notNull(),
+  sessionId: varchar("sessionId", { length: 120 }),
+  path: varchar("path", { length: 255 }),
+  metadata: text("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -76,3 +93,4 @@ export type Organization = typeof organizations.$inferSelect;
 export type Questionnaire = typeof questionnaires.$inferSelect;
 export type Evidence = typeof evidence.$inferSelect;
 export type AuditLead = typeof auditLeads.$inferSelect;
+export type AuditEvent = typeof auditEvents.$inferSelect;

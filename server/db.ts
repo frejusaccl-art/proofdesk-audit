@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, auditLeads, evidence, organizationMembers, organizations, questionnaires, users } from "../drizzle/schema.js";
+import { InsertUser, auditEvents, auditLeads, evidence, organizationMembers, organizations, questionnaires, users } from "../drizzle/schema.js";
 import { ENV } from "./_core/env.js";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -106,4 +106,4 @@ export async function getUserOrganization(userId: number, userName?: string | nu
   return (await ensureWorkspace(userId, userName)).organization;
 }
 
-export { auditLeads, evidence, organizationMembers, organizations, questionnaires, users };
+export { auditEvents, auditLeads, evidence, organizationMembers, organizations, questionnaires, users };
