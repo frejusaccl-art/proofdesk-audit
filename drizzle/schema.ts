@@ -26,9 +26,7 @@ export const organizationMembers = mysqlTable("organizationMembers", {
   userId: int("userId").notNull(),
   role: mysqlEnum("role", ["owner", "admin", "member", "reviewer"]).default("member").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => ({
-  organizationUserUnique: uniqueIndex("organization_user_unique").on(table.organizationId, table.userId),
-}));
+}, (table) => ({ organizationUserUnique: uniqueIndex("organization_user_unique").on(table.organizationId, table.userId) }));
 
 export const questionnaires = mysqlTable("questionnaires", {
   id: int("id").autoincrement().primaryKey(),
@@ -87,6 +85,50 @@ export const auditEvents = mysqlTable("auditEvents", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const qualifyProspects = mysqlTable("qualifyProspects", {
+  id: int("id").autoincrement().primaryKey(),
+  discordUserId: varchar("discordUserId", { length: 32 }).notNull().unique(),
+  discordUsername: varchar("discordUsername", { length: 191 }),
+  displayName: varchar("displayName", { length: 191 }),
+  email: varchar("email", { length: 320 }),
+  company: varchar("company", { length: 191 }),
+  activity: varchar("activity", { length: 191 }),
+  situation: text("situation"),
+  mainProblem: text("mainProblem"),
+  objective: text("objective"),
+  needs: text("needs"),
+  urgency: varchar("urgency", { length: 40 }),
+  budget: varchar("budget", { length: 80 }),
+  interestLevel: mysqlEnum("interestLevel", ["unknown", "low", "medium", "high", "hot"]).default("unknown").notNull(),
+  status: mysqlEnum("status", ["new", "audit_in_progress", "audited", "follow_up", "hot", "meeting", "client", "unqualified", "paused"]).default("new").notNull(),
+  auditStep: int("auditStep").default(0).notNull(),
+  agentMode: mysqlEnum("agentMode", ["active", "human"]).default("active").notNull(),
+  summary: text("summary"),
+  privateNotes: text("privateNotes"),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  lastActivityAt: timestamp("lastActivityAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const qualifyMessages = mysqlTable("qualifyMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  prospectId: int("prospectId").notNull(),
+  discordMessageId: varchar("discordMessageId", { length: 32 }),
+  direction: mysqlEnum("direction", ["inbound", "outbound", "system"]).notNull(),
+  content: text("content").notNull(),
+  metadata: text("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const qualifyNotes = mysqlTable("qualifyNotes", {
+  id: int("id").autoincrement().primaryKey(),
+  prospectId: int("prospectId").notNull(),
+  authorId: int("authorId").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Organization = typeof organizations.$inferSelect;
@@ -94,3 +136,6 @@ export type Questionnaire = typeof questionnaires.$inferSelect;
 export type Evidence = typeof evidence.$inferSelect;
 export type AuditLead = typeof auditLeads.$inferSelect;
 export type AuditEvent = typeof auditEvents.$inferSelect;
+export type QualifyProspect = typeof qualifyProspects.$inferSelect;
+export type QualifyMessage = typeof qualifyMessages.$inferSelect;
+export type QualifyNote = typeof qualifyNotes.$inferSelect;

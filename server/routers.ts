@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies.js";
 import { systemRouter } from "./_core/systemRouter.js";
 import { publicProcedure, router } from "./_core/trpc.js";
 import { proofdeskRouter } from "./router-modules/proofdesk.js";
+import { qualifyRouter } from "./router-modules/qualify.js";
 
 export const appRouter = router({
   system: systemRouter,
@@ -15,6 +16,7 @@ export const appRouter = router({
     }),
   }),
   proofdesk: proofdeskRouter,
+  qualify: qualifyRouter,
 });
 
 export type AppRouter = typeof appRouter;
