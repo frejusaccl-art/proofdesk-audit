@@ -62,6 +62,24 @@ Ne jamais envoyer le token du bot dans une conversation. Il devra être ajouté 
 
 Le **Bot Token** sera saisi uniquement dans le gestionnaire de secrets. Il ne doit pas être commité dans GitHub, copié dans un fichier public ou envoyé dans le chat.
 
+Variables attendues par le worker :
+
+```text
+DISCORD_BOT_TOKEN=à renseigner dans les secrets uniquement
+DISCORD_GUILD_ID=ID du serveur de test
+DISCORD_CHANNEL_ID=ID du canal de qualification (optionnel si les messages privés sont retenus)
+DISCORD_ADMIN_USER_IDS=IDs Discord des opérateurs, séparés par des virgules
+DATABASE_URL=base ProofDesk existante
+```
+
+Commande locale ou hébergée :
+
+```bash
+pnpm discord:worker
+```
+
+Le worker utilise le Gateway Discord v10, renvoie les messages via l’API Discord et conserve chaque message dans les tables Qualify. Il ne démarre pas sans `DISCORD_BOT_TOKEN`.
+
 ## Intentions Discord à prévoir
 
 Pour une première version conversationnelle, demander uniquement les permissions nécessaires :
