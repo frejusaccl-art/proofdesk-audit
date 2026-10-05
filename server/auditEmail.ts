@@ -47,3 +47,15 @@ export async function sendAuditEmail(input: { audit: AuditEmailInput; calculatio
   }
   return { sent: true as const };
 }
+
+export async function notifyConversionRequest(input: { kind: "pilot" | "meeting"; metadata: Record<string, unknown>; score?: number }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  const recipient = process.env.RESEND_LEADS_TO;
+  if (!apiKey || !from || !recipient) return { sent: false as const, skipped: true as const };
+  const label = input.kind === "pilot" ? "Demande de pilote" : "Demande de rendez-vous";
+  const rows = Object.entries(input.metadata).map(([key, value]) => `<tr><td style="padding:6px 10px;color:#667">${escapeHtml(key)}</td><td style="padding:6px 10px"><strong>${escapeHtml(value)}</strong></td></tr>`).join("");
+  const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: [recipient], reply_to: process.env.RESEND_REPLY_TO || from, subject: `[ProofDesk] ${label}`, html: `<div style="font-family:Arial,sans-serif;color:#18201d;line-height:1.5"><h2>${escapeHtml(label)}</h2><p>Une nouvelle demande vient d’être enregistrée sur vendeviaa.com${input.score === undefined ? "" : ` — score ${input.score}/100`}.</p><table>${rows}</table><p>Traiter cette demande dans le cockpit Qualify.</p></div>` }) });
+  if (!response.ok) throw new Error(`Lead notification rejected (${response.status})`);
+  return { sent: true as const, skipped: false as const };
+}

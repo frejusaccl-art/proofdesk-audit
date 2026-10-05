@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { getDb, getQualifyProspect, getQualifySummary, qualifyMessages, qualifyNotes, qualifyProspects } from "../db.js";
+import { getDb, getQualifyProspect, getQualifySummary, getRecentConversionRequests, qualifyMessages, qualifyNotes, qualifyProspects } from "../db.js";
 import { protectedProcedure, router } from "../_core/trpc.js";
 
 const status = z.enum(["new", "audit_in_progress", "audited", "follow_up", "hot", "meeting", "client", "unqualified", "paused"]);
@@ -14,6 +14,7 @@ const ownerOnly = protectedProcedure.use(({ ctx, next }) => {
 
 export const qualifyRouter = router({
   summary: ownerOnly.query(() => getQualifySummary()),
+  conversions: ownerOnly.query(() => getRecentConversionRequests()),
   prospect: ownerOnly.input(z.object({ id: z.number().int().positive() })).query(({ input }) => getQualifyProspect(input.id)),
   update: ownerOnly.input(z.object({ id: z.number().int().positive(), status: status.optional(), interestLevel: interest.optional(), agentMode: z.enum(["active", "human"]).optional(), summary: z.string().max(10000).optional(), privateNotes: z.string().max(10000).optional() })).mutation(async ({ input }) => {
     const db = await getDb();

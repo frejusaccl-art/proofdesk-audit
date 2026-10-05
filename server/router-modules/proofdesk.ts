@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { auditEvents, auditLeads, evidence, ensureWorkspace, getWorkspaceSummary, getDb, questionnaires } from "../db.js";
+import { notifyConversionRequest } from "../auditEmail.js";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc.js";
 
 const questionnaireStatus = z.enum(["draft", "in_review", "approved", "shared"]);
@@ -62,10 +63,19 @@ export const proofdeskRouter = router({
     }),
   }),
   auditEvents: router({
-    track: publicProcedure.input(z.object({ eventName: z.string().min(2).max(80), sessionId: z.string().max(120).optional(), path: z.string().max(255).optional(), metadata: z.record(z.string(), z.unknown()).optional() })).mutation(async ({ input }) => {
+    track: publicProcedure.input(z.object({ eventName: z.string().min(2).max(80), sessionId: z.string().max(120).optional(), path: z.string().max(255).optional(), metadata: z.record(z.string(), z.unknown()).optional(), consentAt: z.string().datetime().optional(), consentVersion: z.string().min(1).max(40).optional(), consentPurpose: z.string().min(1).max(255).optional() }).superRefine((input, ctx) => {
+      const requiresConsent = input.eventName === "pilot_request_submitted" || input.eventName === "meeting_request_submitted";
+      if (requiresConsent && !input.consentAt) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["consentAt"], message: "Consentement requis" });
+      if (requiresConsent && !input.consentVersion) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["consentVersion"], message: "Version du consentement requise" });
+      if (requiresConsent && !input.consentPurpose) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["consentPurpose"], message: "Finalité du consentement requise" });
+    })).mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) return { persisted: false as const };
-      await db.insert(auditEvents).values({ eventName: input.eventName, sessionId: input.sessionId || null, path: input.path || null, metadata: input.metadata ? JSON.stringify(input.metadata) : null });
+      const metadata = input.metadata || input.consentAt ? { ...(input.metadata || {}), ...(input.consentAt ? { consentAt: input.consentAt, consentVersion: input.consentVersion, consentPurpose: input.consentPurpose } : {}) } : null;
+      await db.insert(auditEvents).values({ eventName: input.eventName, sessionId: input.sessionId || null, path: input.path || null, metadata: metadata ? JSON.stringify(metadata) : null });
+      if (input.eventName === "pilot_request_submitted" || input.eventName === "meeting_request_submitted") {
+        void notifyConversionRequest({ kind: input.eventName === "pilot_request_submitted" ? "pilot" : "meeting", metadata: input.metadata || {}, score: typeof input.metadata?.score === "number" ? input.metadata.score : undefined }).catch(error => console.warn("[Conversion] Notification failed:", error));
+      }
       return { persisted: true as const };
     }),
   }),

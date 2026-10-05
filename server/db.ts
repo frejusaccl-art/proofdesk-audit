@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, auditEvents, auditLeads, evidence, organizationMembers, organizations, questionnaires, users, qualifyMessages, qualifyNotes, qualifyProspects } from "../drizzle/schema.js";
 import { ENV } from "./_core/env.js";
@@ -80,6 +80,13 @@ export async function getQualifySummary() {
     db.select({ count: sql<number>`count(*)` }).from(qualifyMessages),
   ]);
   return { prospects, stats: { total: prospects.length, hot: Number(hot[0]?.count ?? 0), active: Number(active[0]?.count ?? 0), messages: Number(messages[0]?.count ?? 0) } };
+}
+
+export async function getRecentConversionRequests() {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not configured");
+  const rows = await db.select().from(auditEvents).where(inArray(auditEvents.eventName, ["pilot_request_submitted", "meeting_request_submitted"])).orderBy(desc(auditEvents.createdAt)).limit(50);
+  return rows.map(row => ({ ...row, metadata: row.metadata ? (() => { try { return JSON.parse(row.metadata); } catch { return {}; } })() : {} }));
 }
 
 export async function getQualifyProspect(id: number) {
